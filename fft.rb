@@ -1,29 +1,22 @@
 #!/usr/bin/ruby
 
-p1 = [1, 2]
-p2 = [2, 3]
+p1 = [0, 1, 2, 3]
+p2 = [10, 11, 12, 13]
 
-arr = [0, 1, 2, 3, 0, 0, 0, 0]
+$omega = (0..p1.size * 4).inject({}){|h, k| h[k] = Complex(Math.cos(2 * Math::PI * k / (p1.size * 2)), Math.sin(2 * Math::PI * k / (p1.size * 2))); h}
+$invOmega = (0..p1.size * 4).inject({}){|h, k| h[k] = Complex(Math.cos(2 * Math::PI * k / (p1.size * 2)), -Math.sin(2 * Math::PI * k / (p1.size * 2))); h}
 
-$omega = (0..arr.size * 2).inject({}){|h, k| h[k] = Complex(Math.cos(2 * Math::PI * k / arr.size), Math.sin(2 * Math::PI * k / arr.size)); h}
-puts $omega.inspect
-# puts $omega[2]
-
-def fft(poly, power = 1)
+def fft(poly, inv = false, power = 1)
 	return poly if poly.size == 1
-	evens = Array.new(poly.size / 2){|x| poly[x * 2]}
-	odds = Array.new(poly.size / 2){|x| poly[x * 2 + 1]}
-	evens = fft(evens, power * 2)
-	odds = fft(odds, power * 2)
+	evens = fft(Array.new(poly.size / 2){|x| poly[x * 2]}, inv, power * 2)
+	odds = fft(Array.new(poly.size / 2){|x| poly[x * 2 + 1]}, inv, power * 2)
 	evens.concat(evens)
-	odds.concat(odds.map{|x| -x})
-	# puts poly.size
-	# puts "Odds: #{odds.inspect}\nEvens: #{evens.inspect}"
-	temp=Array.new(poly.size){|i| evens[i] + odds[i] * $omega[i * power]}
-	# puts "#{odds.inspect} : #{evens.inspect} : #{temp.inspect}"
-	puts temp.inspect
-	temp
+	odds.concat(odds)
+	Array.new(poly.size){|i| evens[i] + odds[i] * (inv ? $invOmega[i * power] : $omega[i * power])}
 end
 
-puts fft(arr).inspect
-
+p1.concat(Array.new(p1.size, 0))
+p2.concat(Array.new(p2.size, 0))
+p1fft = fft(p1)
+p2fft = fft(p2)
+puts fft(p1fft.zip(p2fft).map{|x| x.inject(:*)}, true).map{|x| x / p1.size}.map(&:real).inspect
